@@ -14,6 +14,20 @@
 #include "user.hpp"
 #include "commDb.hpp"
 
+#define UNUSED(x) (void)x
+
+void serve_command(int clientDesc, std::string command)
+{
+        UNUSED(clientDesc);
+
+        msg message;
+        message.decode(command);
+
+        std::string version = message[0];
+
+        std::cout<<"[DEBUG] Serving protocol version "<<version<<std::endl;
+}
+
 void driver_func(int clientDesc)
 {
         std::thread::id this_id = std::this_thread::get_id();
@@ -49,7 +63,7 @@ void driver_func(int clientDesc)
 
                         std::cout<<"[DEBUG] "<<command<<" vs "<<std::get<1>(fixed)<<std::endl;
 
-                        // insert yet another driver here
+                        serve_command(clientDesc, std::get<1>(fixed));
 
                         fixed = msg::fixupCommand(command);
                 }

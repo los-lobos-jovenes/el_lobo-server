@@ -17,6 +17,8 @@ class msg{
 
     public:
 
+        msg() = default;
+
         template <typename T>
         void form(const T &part)
         {
@@ -30,10 +32,9 @@ class msg{
             form(parts...);
         }
 
-
         std::string concat() const
         {
-            std::string sum;
+            std::string sum = "";
             sum += separator;
 
             for(auto i : parts)
@@ -42,6 +43,11 @@ class msg{
                 sum += separator;
             }
             return sum;
+        }
+
+        std::string operator[](std::size_t no) const
+        {
+            return this->extract(no);
         }
 
         std::string extract(std::size_t no) const
@@ -56,7 +62,7 @@ class msg{
         void decode(std::string s)
         {
             std::stringstream ss;
-            ss << s;
+            ss << s.substr(1);
             std::string part;
 
             while (getline(ss, part, separator))
@@ -126,11 +132,11 @@ class msg{
                                 throw new std::runtime_error("[ERROR] Could not enumerate sections.");
                         }();
 
-                        return {true, cmd.substr(0, endpos), cmd.substr(endpos + 1)};
+                        return {true, cmd.substr(0, endpos + 1), cmd.substr(endpos + 1)};
                 }
                 else
                 {
-                    return  {true, cmd.substr(0, cmd.find_last_of(separator)), ""};
+                    return  {true, cmd.substr(0, cmd.find_last_of(separator) + 1), ""};
                 }
 
                 throw new std::runtime_error("[ERROR] Could not validate command.");
