@@ -14,7 +14,7 @@ gdzie:
 
 * | oznacza separator
 * Nagłówek, składający się z czterech charów, charakteryzuje polecenie/zwracane dane
-* wersja protokołu jest stringiem, podawana celem zachowania kompatybilności
+* wersja protokołu jest integerem, podawana celem zachowania kompatybilności
 * liczba argumentów to integer, opisuje liczbę następujących po sobie argumentów. Może wynieść 0
 * opcjonalne argumenty/zwracane dane
 

@@ -16,16 +16,71 @@
 
 #define UNUSED(x) (void)x
 
+// At this point we have something that looks like a valid command. Let's parse it!
 void serve_command(int clientDesc, std::string command)
 {
-        UNUSED(clientDesc);
+        if(command.empty())
+        {
+                return;
+        }
 
+        msg tmp;
         msg message;
         message.decode(command);
 
-        std::string version = message[0];
+        auto version = std::atoi(message[0].c_str()); // Returns 0 on error - fine - we have 1 as lowes number
+        auto header  = message[1];
 
         std::cout<<"[DEBUG] Serving protocol version "<<version<<std::endl;
+        
+        switch(version)
+        {
+                case 1:
+                {
+                        if(header == "CREA")
+                        {
+                                auto username = message[3];
+
+                                if(username.empty())
+                                {
+                                        tmp.form("1", "RETN", "2", "ERROR", "USERNAME_EMPTY");
+                                        auto ret = tmp.concat();
+                                        write(clientDesc, ret.c_str(), ret.size());
+                                        break;
+                                }
+
+                                auto password = message[4];
+
+                                if(password.empty())
+                                {
+                                        tmp.form("1", "RETN", "2", "ERROR", "NO_PSWD_PROVIDED");
+                                        auto ret = tmp.concat();
+                                        write(clientDesc, ret.c_str(), ret.size());
+                                        break;
+                                }
+
+                                auto result = userContainer::addUser(username, password);
+
+                                if(!result)
+                                {
+                                        tmp.form("1", "RETN", "2", "ERROR", "USERNAME_TAKEN");
+                                        auto ret = tmp.concat();
+                                        write(clientDesc, ret.c_str(), ret.size());
+                                        break;
+                                }
+                                
+                                tmp.form("1", "RETN", "1", "SUCCESS");
+                                auto ret = tmp.concat();
+                                write(clientDesc, ret.c_str(), ret.size()); 
+                        }
+                }
+                break;
+
+                default:
+                std::cout<<"[ERROR] Unknown protocol version."<<std::endl;
+                break;
+        }
+        
 }
 
 void driver_func(int clientDesc)
@@ -78,8 +133,6 @@ void driver_func(int clientDesc)
 
         std::cout<<"[DEBUG] Stopped thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
 }
-
-std::map<std::string, std::multimap<std::string, commEntry>> commContainer::msgs;
 
 int main(int argc, char * argv[])
 {

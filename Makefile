@@ -1,6 +1,6 @@
 LIBZ= -pthread
 CXX= g++
-SRCZ= src/main.cpp
+SRCZ= src/main.cpp src/dbStaticDriver.cpp
 HDRZ=
 INC= -I src/
 TRGT= lobo
