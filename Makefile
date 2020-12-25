@@ -16,6 +16,8 @@ endif
 ifeq ($(DEBUG), false)
 UBSAN= 
 OPT= -O3
+else
+OPT += -DMSG_SEPARATOR=\'\;\'
 endif
 
 all: $(SRCZ) $(HDRZ)

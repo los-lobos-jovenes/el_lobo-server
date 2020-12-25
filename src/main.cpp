@@ -14,77 +14,6 @@
 #include "user.hpp"
 #include "commDb.hpp"
 
-/*
-Returns:
-        -> if the arrived command is complete and valid
-        -> the command
-        -> the extras (e.g. glued next command) to be separated
-*/
-std::tuple<bool, std::string, std::string> fixupCommand(std::string cmd, char separator)
-{
-        if(cmd.size() < 9)
-        {
-                // No head and version found
-                return {false, "", ""};
-        }
-
-        if(cmd[0] != separator)
-        {
-                // Null command - it was probably malformed, so let's reject it
-                return {true, "", ""};
-        }
-
-        const auto adjBeg = cmd.begin() + 8;
-        const auto begPl = std::find(adjBeg, cmd.end(), separator);
-
-        if(begPl == cmd.end())
-        {
-                // No valid payload
-                return {false, "", ""};
-        }
-
-        int noOfSections = std::atoi(cmd.substr(std::distance(cmd.begin(), adjBeg), std::distance(cmd.begin(), begPl)).c_str());
-        int noOfArrivedSections = std::count(begPl, cmd.end(), separator) - 1;
-
-        std::cout<<"[DEBUG] Sections: Expected "<<noOfSections<<" found "<<noOfArrivedSections<<std::endl;
-
-        if(noOfSections > noOfArrivedSections)
-        {
-                // Not all of the command has arrived yet
-                return {false, "", ""};
-        }
-        else if (noOfSections < noOfArrivedSections)
-        {
-                // More than one command glued together
-
-                int secNo = 0;
-
-                size_t endpos = 
-                [&]() -> size_t {
-                        for(auto i = begPl; i != cmd.end(); i++)
-                        {
-                                if(*i == separator)
-                                {
-                                        secNo++;
-                                }
-                                if(secNo == noOfSections + 1)
-                                {
-                                        return std::distance(cmd.begin(), i);
-                                }
-                        }
-                        throw new std::runtime_error("[ERROR] Could not enumerate sections.");
-                }();
-
-                return {true, cmd.substr(0, endpos), cmd.substr(endpos + 1)};
-        }
-        else
-        {
-             return  {true, cmd.substr(0, cmd.find_last_of(separator)), ""};
-        }
-
-        throw new std::runtime_error("[ERROR] Could not validate command.");
-}
-
 void driver_func(int clientDesc)
 {
         std::thread::id this_id = std::this_thread::get_id();
@@ -94,7 +23,6 @@ void driver_func(int clientDesc)
         
         char * buf = new char[100];
         short last;
-        char separator = ';';
 
         std::string command = "";
 
@@ -113,7 +41,7 @@ void driver_func(int clientDesc)
 
                 command.append(buf, last);
                 
-                auto fixed = fixupCommand(command, separator);
+                auto fixed = msg::fixupCommand(command);
 
                 while(std::get<0>(fixed) == true)
                 {
@@ -123,7 +51,7 @@ void driver_func(int clientDesc)
 
                         // insert yet another driver here
 
-                        fixed = fixupCommand(command, separator);
+                        fixed = msg::fixupCommand(command);
                 }
 
 
