@@ -5,12 +5,56 @@
 #include <string>
 #include <unistd.h>
 #include <algorithm>
+
 #include "msg.hpp"
 #include "user.hpp"
 #include "commDb.hpp"
+#include "subscriberDb.hpp"
 
 #define UNUSED(x) (void)x
 #define DO_LIMIT_COMMAND_SIZE 0
+
+static void writeWrapper(int desc, std::string s)
+{
+        int off = 0;
+        int n;
+        do
+        {
+                n = write(desc, s.substr(off).c_str(), s.substr(0).size());
+                off += n;
+        }
+        while(n < static_cast<int>(s.substr(off).size()) && n > 0);
+
+        if(n < 0)
+        {
+                throw new std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
+        }
+}
+
+template <typename ...T>
+static void formAndWrite(int clientDesc, T ...s)
+{
+        msg tmp;
+        tmp.form(s...);
+        writeWrapper(clientDesc, tmp.concat());
+}
+
+//notify subscribers
+void notify(std::string target, std::string fromWho)
+{
+        try
+        {
+                auto ret = subscriberDb::getSubscriberDescriptor(target);
+                if(ret != -1)
+                {      
+                        formAndWrite(ret, "1", "ALRT", "2", "SUBSCRIPTION_ALERT", fromWho.c_str());
+                }
+        }
+        catch(std::exception &e)
+        {
+                std::cout<<"[ERROR] Could not notify client."<<std::endl;
+        }
+}
 
 // At this point we have something that looks like a valid command. Let's parse it!
 void serve_command(int clientDesc, std::string command)
@@ -22,28 +66,6 @@ void serve_command(int clientDesc, std::string command)
 
         msg message;
         message.decode(command.substr(1));
-
-        auto writeWrapper = [](int desc, std::string s) -> void{
-                int off = 0;
-                int n;
-                do
-                {
-                        n = write(desc, s.substr(off).c_str(), s.substr(0).size());
-                        off += n;
-                }
-                while(n < static_cast<int>(s.substr(off).size()) && n > 0);
-
-                if(n < 0)
-                {
-                        throw new std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
-                }
-        };
-
-        auto formAndWrite = [&writeWrapper](int clientDesc, auto ...s) -> void{
-                msg tmp;
-                tmp.form(s...);
-                writeWrapper(clientDesc, tmp.concat());
-        };
 
         auto version = std::atoi(message[0].c_str()); // Returns 0 on error - fine - we have 1 as lowes number
         auto header  = message[1];
@@ -111,6 +133,9 @@ void serve_command(int clientDesc, std::string command)
 
                                 commContainer::processAndAcceptComm(commEntry(username, target, payload));
                                 formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
+
+                                std::thread notificator(notify, target, username);
+                                notificator.detach();
                         }
                         else if(header == "PEND") // Get list of pending messages from users
                         {
@@ -174,6 +199,32 @@ void serve_command(int clientDesc, std::string command)
                                 commContainer::removeUser(username);
                                 formAndWrite(clientDesc, "1", "RETN", "1", "BYE");
                         }
+                        else if(header == "SUBS")
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+                                subscriberDb::addSubscriber(username, clientDesc);
+                                formAndWrite(clientDesc, "1", "RETN", "1", "SUBSCRIBED");
+                        }
+                        else if(header == "USUB")
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+                                subscriberDb::removeSubscriber(username);
+                                formAndWrite(clientDesc, "1", "RETN", "1", "UNSUBSCRIBED");
+                        }
                 }
                 break;
 
@@ -186,52 +237,50 @@ void serve_command(int clientDesc, std::string command)
 
 void driver_func(int clientDesc)
 {
-    std::thread::id this_id = std::this_thread::get_id();
-    try {
-        std::cout<<"[DEBUG] Started thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
-
-        // Arrays have contiguous mem allocation, so better option then some dynamic array (cleans nicer too)
-        std::array<char, 100> buf;
-
-        short last;
-
-        std::string command = "";
-
-        do
+        std::thread::id this_id = std::this_thread::get_id();
+        try 
         {
-                last = read(clientDesc, reinterpret_cast<void *>(&buf[0]), sizeof(char) * 100);
-                if(command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
+                std::cout<<"[DEBUG] Started thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+
+                // Arrays have contiguous mem allocation, so better option then some dynamic array (cleans nicer too)
+                std::array<char, 100> buf;
+                short last;
+                std::string command = "";
+
+                do
                 {
-                        std::cout<<"[DEBUG] Disconnecting - command size exceeds all expectations; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
-                        break;
-                }
-                if(last <= 0)
-                {
-                        std::cout<<"[DEBUG] Reacting to disconnect; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
-                }
+                        last = read(clientDesc, reinterpret_cast<void *>(&buf[0]), sizeof(char) * 100);
+                        if(command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
+                        {
+                                std::cout<<"[DEBUG] Disconnecting - command size exceeds all expectations; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+                                break;
+                        }
+                        if(last <= 0)
+                        {
+                                std::cout<<"[DEBUG] Reacting to disconnect; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+                        }
 
-                command.append(buf.data(), last);
-                auto fixed = msg::fixupCommand(command);
+                        command.append(buf.data(), last);
+                        auto fixed = msg::fixupCommand(command);
 
-                while(std::get<0>(fixed) == true)
-                {
-                        command = std::get<2>(fixed);
-                        std::cout<<"[DEBUG]: "<<command<<" vs act: "<<std::get<1>(fixed)<<std::endl;
+                        while(std::get<0>(fixed) == true)
+                        {
+                                command = std::get<2>(fixed);
+                                std::cout<<"[DEBUG]: "<<command<<" vs act: "<<std::get<1>(fixed)<<std::endl;
 
-                        serve_command(clientDesc, std::get<1>(fixed));
-                        fixed = msg::fixupCommand(command);
-                }
+                                serve_command(clientDesc, std::get<1>(fixed));
+                                fixed = msg::fixupCommand(command);
+                        }
 
 
-        }while(last > 0);
+                }while(last > 0);
+        }
+        catch(const std::exception &e)
+        {
+                std::cout<<"[FATAL] Exception in thread - killing thread, closing connection; thread id: "<<this_id<<"; client id: "<<clientDesc<<"; reason: "<<e.what()<<std::endl;
+        }
 
         close(clientDesc);
-        std::cout<<"[DEBUG] Disconnected"<<std::endl;
+        subscriberDb::removeSubscriber(clientDesc);
         std::cout<<"[DEBUG] Stopped thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
-    }
-    catch(const std::exception &e)
-    {
-        std::cout<<"[FATAL] Exception in thread - killing thread, closing connection; thread id: "<<this_id<<"; client id: "<<clientDesc<<"; reason: "<<e.what()<<std::endl;
-        close(clientDesc);
-    }
 }

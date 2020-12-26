@@ -94,11 +94,7 @@ class commContainer
         {
             std::lock_guard<std::mutex> lock(protector);
 
-            auto cs = msgs[receipent].equal_range(fromWho);
-            for(auto it = cs.first; it != cs.second; it++)
-            {
-                msgs[receipent].erase(it);
-            }
+            msgs[receipent].erase(fromWho);
         }
 
         static void removeUser(std::string username)
