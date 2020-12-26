@@ -41,4 +41,4 @@ Uwagi.
 | Nazwa | Wersja |                   Przeznaczenie                       |
 |:-----:|:------:|:-----------------------------------------------------:|
 |  RETN |    1   |               Zwracana wiadomość                      |
-|  RETB |    1   | Koniec transmisji wielu danych (np. wielu wiadomości) |
+|  ENDT |    1   | Koniec transmisji wielu danych (np. wielu wiadomości) |

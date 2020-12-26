@@ -111,6 +111,25 @@ void serve_command(int clientDesc, std::string command)
                                 commContainer::processAndAcceptComm(commEntry(username, target, payload));
                                 formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
                         }
+                        else if(header == "PEND")
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+
+                                auto ret = commContainer::peekPendingForUser(username);
+
+                                for(const auto i : ret)
+                                {
+                                    formAndWrite(clientDesc, "1", "RETN", "1", i);
+                                }
+                                formAndWrite(clientDesc, "1", "ENDT", "0");
+                        }
                 }
                 break;
 
