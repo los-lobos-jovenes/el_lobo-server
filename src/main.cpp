@@ -8,11 +8,15 @@
 #include <thread>
 #include <string>
 #include <algorithm>
+#include <signal.h>
 
 extern void driver_func(int clientDesc);
+extern void shut_down_proc(int signum);
 
 int main(int argc, char * argv[])
 {
+        signal(SIGINT, shut_down_proc);
+
         int port = 1300;
         int backlogSize = 2;
         char reuse_addr_val = 0;
@@ -72,4 +76,5 @@ int main(int argc, char * argv[])
 
         }
 
+        close(sock);
 }

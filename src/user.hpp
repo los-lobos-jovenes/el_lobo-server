@@ -22,7 +22,7 @@ class user {
 
 class userContainer {
 
-    static std::map<std::string, user *> users;
+    static std::map<std::string, std::unique_ptr<user>> users;
     static std::mutex protector;
 
     public:
@@ -41,7 +41,7 @@ class userContainer {
                 return false;
             }
             bool success;
-            std::tie(std::ignore, success) = users.insert( { name, new user(name, pswd) } );
+            std::tie(std::ignore, success) = users.insert( { name, std::make_unique<user>(name, pswd) } );
             return success;
         }
         static bool authenticateUser(std::string name, std::string pswd)

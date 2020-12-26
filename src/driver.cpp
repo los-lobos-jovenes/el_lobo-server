@@ -25,7 +25,7 @@ static void writeWrapper(int desc, std::string s)
         }
         while(n < static_cast<int>(s.substr(off).size()) && n > 0);
 
-        if(n < 0)
+        if(n <= 0)
         {
                 throw new std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
         }
@@ -283,4 +283,12 @@ void driver_func(int clientDesc)
         close(clientDesc);
         subscriberDb::removeSubscriber(clientDesc);
         std::cout<<"[DEBUG] Stopped thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+}
+
+void shut_down_proc(int signum)
+{
+        UNUSED(signum);
+
+        std::cout<<"Shutting down server..."<<std::endl;
+        exit(0);
 }
