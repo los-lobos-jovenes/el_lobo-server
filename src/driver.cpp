@@ -10,6 +10,7 @@
 #include "commDb.hpp"
 
 #define UNUSED(x) (void)x
+#define DO_LIMIT_COMMAND_SIZE 0
 
 // At this point we have something that looks like a valid command. Let's parse it!
 void serve_command(int clientDesc, std::string command)
@@ -34,7 +35,7 @@ void serve_command(int clientDesc, std::string command)
 
                 if(n < 0)
                 {
-                        throw new std::runtime_error("[ERROR] Lost write permission to a socket!");
+                        throw new std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
                 }
         };
 
@@ -156,6 +157,7 @@ void serve_command(int clientDesc, std::string command)
                                     formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
+                                commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
                         }
                 }
                 break;
@@ -169,20 +171,21 @@ void serve_command(int clientDesc, std::string command)
 
 void driver_func(int clientDesc)
 {
-        std::thread::id this_id = std::this_thread::get_id();
-
+    std::thread::id this_id = std::this_thread::get_id();
+    try {
         std::cout<<"[DEBUG] Started thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
-        //write(clientDesc, "Dziala", sizeof(char) * 7);
-        
-        char * buf = new char[100];
+
+        // Arrays have contiguous mem allocation, so better option then some dynamic array (cleans nicer too)
+        std::array<char, 100> buf;
+
         short last;
 
         std::string command = "";
 
         do
         {
-                last = read(clientDesc, (void *)buf, sizeof(char) * 100);
-                if(command.size() > 550)
+                last = read(clientDesc, reinterpret_cast<void *>(&buf[0]), sizeof(char) * 100);
+                if(command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
                 {
                         std::cout<<"[DEBUG] Disconnecting - command size exceeds all expectations; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
                         break;
@@ -192,18 +195,15 @@ void driver_func(int clientDesc)
                         std::cout<<"[DEBUG] Reacting to disconnect; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
                 }
 
-                command.append(buf, last);
-                
+                command.append(buf.data(), last);
                 auto fixed = msg::fixupCommand(command);
 
                 while(std::get<0>(fixed) == true)
                 {
                         command = std::get<2>(fixed);
-
                         std::cout<<"[DEBUG]: "<<command<<" vs act: "<<std::get<1>(fixed)<<std::endl;
 
                         serve_command(clientDesc, std::get<1>(fixed));
-
                         fixed = msg::fixupCommand(command);
                 }
 
@@ -212,8 +212,11 @@ void driver_func(int clientDesc)
 
         close(clientDesc);
         std::cout<<"[DEBUG] Disconnected"<<std::endl;
-
-        delete [] buf;
-
         std::cout<<"[DEBUG] Stopped thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+    }
+    catch(const std::exception &e)
+    {
+        std::cout<<"[FATAL] Exception in thread - killing thread, closing connection; thread id: "<<this_id<<"; client id: "<<clientDesc<<"; reason: "<<e.what()<<std::endl;
+        close(clientDesc);
+    }
 }
