@@ -4,6 +4,30 @@ Serwer czatu el-lobo
 
 [insert-logo-here]
 
+## Kompilacja
+
+Wymagania:
+* kompilator GCC
+* GNU make
+> apt install gcc-9 make
+
+Z włączonym debuowaniem
+* UBSAN (wybrane moduły)
+* symbole dla gdb
+* użycie `;` jako separatora
+> make
+
+Z optymalizacją
+* poziom optymalizacji `-O3`
+* separator dziesiętnie `\31`
+> make DEBUG=false
+
+## Uruchomienie
+
+> ./lobo [numer_portu]
+
+Bez podania portu, nasłuchuje na porcie 1300.
+
 ## Protokół
 
 Składnia
@@ -12,7 +36,7 @@ Składnia
 
 gdzie:
 
-* | oznacza separator
+* | oznacza separator (domyślnie dziesiętnie `\31`)
 * Nagłówek, składający się z czterech charów, charakteryzuje polecenie/zwracane dane
 * wersja protokołu jest integerem, podawana celem zachowania kompatybilności
 * liczba argumentów to integer, opisuje liczbę następujących po sobie argumentów. Może wynieść 0
@@ -38,7 +62,7 @@ Uwagi.
 * **PULL** po wysłaniu wiadomości usuwa je z serwera (serwer przechowuje tylko nieprzeczytane wiadomości).
 * **PULL** pobiera na raz wszystkie wiadomości. Przygotuj trochę miejsca. Jednak usuwa wiadomość z serwera dopiero, kiedy udało się całą wytransmitować, więc nawet po przerwaniu połączenia, zacznie pobierać wiadomości które nie zostały przesłane.
 * Mechanizm subskrypcji wysyła informacje o nowej wiadomości do subskrybenta. Po przełączeniu się na nowe gniazdo (ponownym połączeniu), trzeba subskrybować od nowa.
-Zwracana wiadomość jest postaci `|1|ALERT|2|SUBSCRIPTION_ALERT|whoHasSentTheMessage-username|`.
+Zwracana wiadomość jest postaci `|1|ALRT|2|SUBSCRIPTION_ALERT|whoHasSentTheMessage-username|`.
 
 ### Zwracane przez serwer
 | Nazwa | Wersja |                            Przeznaczenie                                |
