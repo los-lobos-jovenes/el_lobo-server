@@ -52,6 +52,14 @@ class userContainer {
             }
             return false;
         }
+        static bool probeUser(std::string name)
+        {
+            if(users.find(name) != users.end())
+            {
+                return true;
+            }
+            return false;
+        }
 
 };
 

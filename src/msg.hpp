@@ -62,7 +62,7 @@ class msg{
         void decode(std::string s)
         {
             std::stringstream ss;
-            ss << s.substr(1);
+            ss << s;
             std::string part;
 
             while (getline(ss, part, separator))

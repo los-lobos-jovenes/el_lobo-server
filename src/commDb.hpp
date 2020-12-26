@@ -44,6 +44,11 @@ class commContainer
 
     public:
 
+        commContainer() = delete;
+        commContainer(commContainer&) = delete;
+        commContainer(commContainer&&) = delete;
+        void operator=(const commContainer&) = delete;
+
         static void processAndAcceptComm(commEntry c)
         {
             msgs[c.to].insert({c.from, c});
