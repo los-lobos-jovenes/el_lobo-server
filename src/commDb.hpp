@@ -46,7 +46,6 @@ class commContainer
             \\-> the message itself
     */
     static std::mutex protector;
-    static std::condition_variable condition;
     static std::map<std::string, std::multimap<std::string, commEntry>> msgs;
 
     public:
@@ -58,18 +57,16 @@ class commContainer
 
         static void processAndAcceptComm(commEntry c)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             msgs[c.to].insert({c.from, c});
         }
 
         static std::vector<commEntry> pullCommsForUserFromUser(std::string receipent, std::string fromWho)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             auto cs = msgs[receipent].equal_range(fromWho);
-
-            /*if(std::distance(cs.first, cs.second) == 0)
-            {
-                return {};
-            }*/
-
             std::vector<commEntry> retcs = {};
 
             for(auto it = cs.first; it != cs.second; it++)
@@ -81,6 +78,8 @@ class commContainer
 
         static std::vector<std::string> peekPendingForUser(std::string receipent)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             const auto &cs = msgs[receipent];
             std::vector<std::string> rets;
 
@@ -93,14 +92,21 @@ class commContainer
 
         static void deleteCommsForUserFromUser(std::string receipent, std::string fromWho)
         {
-            auto cs = msgs[receipent].equal_range(fromWho);
+            std::lock_guard<std::mutex> lock(protector);
 
+            auto cs = msgs[receipent].equal_range(fromWho);
             for(auto it = cs.first; it != cs.second; it++)
             {
                 msgs[receipent].erase(it);
             }
         }
 
+        static void removeUser(std::string username)
+        {
+            std::lock_guard<std::mutex> lock(protector);
+
+            msgs.erase(username);
+        }
 };
 
 #endif

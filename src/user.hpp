@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <tuple>
+#include <mutex>
 
 class user {
     std::string name, pswd;
@@ -22,6 +23,7 @@ class user {
 class userContainer {
 
     static std::map<std::string, user *> users;
+    static std::mutex protector;
 
     public:
 
@@ -32,6 +34,8 @@ class userContainer {
 
         static bool addUser(std::string name, std::string pswd)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             if(pswd == "")
             {
                 return false;
@@ -42,6 +46,8 @@ class userContainer {
         }
         static bool authenticateUser(std::string name, std::string pswd)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             if(pswd == "")
             {
                 return false;
@@ -54,11 +60,20 @@ class userContainer {
         }
         static bool probeUser(std::string name)
         {
+            std::lock_guard<std::mutex> lock(protector);
+
             if(users.find(name) != users.end())
             {
                 return true;
             }
             return false;
+        }
+
+        static void removeUser(std::string name)
+        {
+            std::lock_guard<std::mutex> lock(protector);
+
+            users.erase(name);
         }
 
 };

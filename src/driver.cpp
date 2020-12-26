@@ -54,7 +54,7 @@ void serve_command(int clientDesc, std::string command)
         {
                 case 1:
                 {
-                        if(header == "CREA")
+                        if(header == "CREA") // Create user
                         {
                                 auto username = message[3];
 
@@ -82,7 +82,7 @@ void serve_command(int clientDesc, std::string command)
                                 
                                 formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
                         }
-                        else if(header == "SEND")
+                        else if(header == "SEND") // Send message
                         {
                                 auto username = message[3];
                                 auto password = message[4];
@@ -112,7 +112,7 @@ void serve_command(int clientDesc, std::string command)
                                 commContainer::processAndAcceptComm(commEntry(username, target, payload));
                                 formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
                         }
-                        else if(header == "PEND")
+                        else if(header == "PEND") // Get list of pending messages from users
                         {
                                 auto username = message[3];
                                 auto password = message[4];
@@ -131,7 +131,7 @@ void serve_command(int clientDesc, std::string command)
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
                         }
-                        else if(header == "PULL")
+                        else if(header == "PULL") // Pull pending messages from user
                         {
                                 auto username = message[3];
                                 auto password = message[4];
@@ -158,6 +158,21 @@ void serve_command(int clientDesc, std::string command)
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
                                 commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
+                        }
+                        else if(header == "UNRG") // Delete own user (unregister)
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+
+                                userContainer::removeUser(username);
+                                commContainer::removeUser(username);
+                                formAndWrite(clientDesc, "1", "RETN", "1", "BYE");
                         }
                 }
                 break;
