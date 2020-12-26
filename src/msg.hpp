@@ -87,9 +87,29 @@ class msg{
 
                 if(cmd[0] != separator)
                 {
-                        // Null command - it was probably malformed, so let's reject it
-                        return {true, "", ""};
+                        // Invalid command format - no sep version - it was probably malformed, so let's reject some section and give it a chance
+                        auto pp = cmd.find_first_of(separator);
+                        if(pp == std::string::npos)
+                        {
+                                // Probably not a payload at all.
+                                return {true, "", ""};
+                        }
+                        return {true, "", cmd.substr(pp) };
                 }
+                /*
+                XXX - better culling - non critical, no crashes will occur
+                else
+                {
+                        // It might be a sep ver
+                        auto cmd2 = cmd.substr(1); // Reject first sep and find next
+                        auto pp = cmd2.find_first_of(separator);
+                        if(pp == std::string::npos)
+                        {
+                                // Probably not a payload at all.
+                                return {true, "", ""};
+                        }
+                        return {true, "", cmd2.substr(pp) };
+                }*/
 
                 const auto adjBeg = cmd.begin() + 8;
                 const auto begPl = std::find(adjBeg, cmd.end(), separator);

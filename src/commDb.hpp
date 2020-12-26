@@ -28,6 +28,13 @@ class commEntry
             this->timestamp = std::chrono::system_clock::now();
         }
 
+        // https://stackoverflow.com/questions/31255486/c-how-do-i-convert-a-stdchronotime-point-to-long-and-back
+        char * getTimestampStr() const
+        {
+            std::time_t t = std::chrono::system_clock::to_time_t(timestamp);
+            return ctime(&t);
+        }
+
 };
 
 class commContainer
