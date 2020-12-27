@@ -16,11 +16,10 @@
 
 static void writeWrapper(int desc, std::string s)
 {
-        int off = 0;
-        int n;
+        int off = 0, n;
         do
         {
-                n = write(desc, s.substr(off).c_str(), s.substr(0).size());
+                n = write(desc, s.substr(off).c_str(), s.substr(off).size());
                 off += n;
         }
         while(n < static_cast<int>(s.substr(off).size()) && n > 0);

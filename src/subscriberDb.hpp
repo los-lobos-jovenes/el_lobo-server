@@ -45,7 +45,6 @@ class subscriberDb
             if (it->second == desc)
             {
                 subscribers.erase(it);
-                return;
             }
         }
     }
