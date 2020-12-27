@@ -11,15 +11,17 @@ Wymagania:
 * GNU make
 > apt install gcc-9 make
 
-Z włączonym debuowaniem
+Z włączonym debugowaniem
 * UBSAN (wybrane moduły)
 * symbole dla gdb
 * użycie `;` jako separatora
+* logowanie na poziomie `Debug`
 > make
 
 Z optymalizacją
 * poziom optymalizacji `-O3`
 * separator dziesiętnie `\31`
+* logowanie na poziomie `Info`
 > make DEBUG=false
 
 ## Uruchomienie

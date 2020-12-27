@@ -5,7 +5,7 @@ HDRZ=
 INC= -I src/
 TRGT= lobo
 UBSAN= -fsanitize=address -fsanitize=leak -fsanitize=undefined
-OPT= -g
+OPT=
 DEBUG?=true
 
 ifeq ($(OS),Windows_NT)
@@ -15,9 +15,9 @@ endif
 
 ifeq ($(DEBUG), false)
 UBSAN= 
-OPT= -O3
+OPT += -O3 -DDEBUG_LEVEL=Info
 else
-OPT += -DMSG_SEPARATOR=\'\;\'
+OPT += -g -DMSG_SEPARATOR=\'\;\' -DDEBUG_LEVEL=Debug
 endif
 
 all: $(SRCZ) $(HDRZ)

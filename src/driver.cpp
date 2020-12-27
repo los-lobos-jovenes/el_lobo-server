@@ -10,6 +10,7 @@
 #include "user.hpp"
 #include "commDb.hpp"
 #include "subscriberDb.hpp"
+#include "logger.hpp"
 
 #define UNUSED(x) (void)x
 #define DO_LIMIT_COMMAND_SIZE 0
@@ -26,7 +27,7 @@ static void writeWrapper(int desc, std::string s)
 
         if(n <= 0)
         {
-                throw new std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
+                throw std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
         }
 }
 
@@ -51,7 +52,8 @@ void notify(std::string target, std::string fromWho)
         }
         catch(std::exception &e)
         {
-                std::cout<<"[ERROR] Could not notify client."<<std::endl;
+                Error.Log("Could not notify subscription client. Releasing subscription for", target);
+                subscriberDb::removeSubscriber(target);
         }
 }
 
@@ -69,7 +71,7 @@ void serve_command(int clientDesc, std::string command)
         auto version = std::atoi(message[0].c_str()); // Returns 0 on error - fine - we have 1 as lowes number
         auto header  = message[1];
 
-        std::cout<<"[DEBUG] Serving protocol version "<<version<<std::endl;
+        Debug.Log("Serving protocol version ", version);
         
         switch(version)
         {
@@ -228,7 +230,7 @@ void serve_command(int clientDesc, std::string command)
                 break;
 
                 default:
-                std::cout<<"[ERROR] Unknown protocol version."<<std::endl;
+                Debug.Log("Unknown protocol version.");
                 break;
         }
         
@@ -239,7 +241,7 @@ void driver_func(int clientDesc)
         std::thread::id this_id = std::this_thread::get_id();
         try 
         {
-                std::cout<<"[DEBUG] Started thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+                Debug.Log("Started thread to serve client; thread id:", this_id, "; client id:", clientDesc);
 
                 // Arrays have contiguous mem allocation, so better option then some dynamic array (cleans nicer too)
                 std::array<char, 100> buf;
@@ -251,12 +253,12 @@ void driver_func(int clientDesc)
                         last = read(clientDesc, reinterpret_cast<void *>(&buf[0]), sizeof(char) * 100);
                         if(command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
                         {
-                                std::cout<<"[DEBUG] Disconnecting - command size exceeds all expectations; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+                                Debug.Log("Disconnecting - command size exceeds all expectations; thread id:", this_id, "; client id:", clientDesc);
                                 break;
                         }
                         if(last <= 0)
                         {
-                                std::cout<<"[DEBUG] Reacting to disconnect; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+                                Debug.Log("Reacting to disconnect; thread id:", this_id, "; client id:", clientDesc);
                         }
 
                         command.append(buf.data(), last);
@@ -265,7 +267,7 @@ void driver_func(int clientDesc)
                         while(std::get<0>(fixed) == true)
                         {
                                 command = std::get<2>(fixed);
-                                std::cout<<"[DEBUG]: "<<command<<" vs act: "<<std::get<1>(fixed)<<std::endl;
+                                Debug.Log("Queued part of command is:", command, " vs real:", std::get<1>(fixed));
 
                                 serve_command(clientDesc, std::get<1>(fixed));
                                 fixed = msg::fixupCommand(command);
@@ -274,20 +276,20 @@ void driver_func(int clientDesc)
 
                 }while(last > 0);
         }
-        catch(const std::exception &e)
+        catch(std::exception &e)
         {
-                std::cout<<"[FATAL] Exception in thread - killing thread, closing connection; thread id: "<<this_id<<"; client id: "<<clientDesc<<"; reason: "<<e.what()<<std::endl;
+                Fatal.Log("Exception in thread - killing thread, closing connection; thread id:", this_id, "; client id:", clientDesc, "; reason:", e.what());
         }
 
         close(clientDesc);
         subscriberDb::removeSubscriber(clientDesc);
-        std::cout<<"[DEBUG] Stopped thread to serve client; thread id: "<<this_id<<"; client id: "<<clientDesc<<std::endl;
+        Debug.Log("Stopped thread to serve client; thread id:", this_id, "; client id:", clientDesc);
 }
 
 void shut_down_proc(int signum)
 {
         UNUSED(signum);
 
-        std::cout<<"Shutting down server..."<<std::endl;
+        Info.Log("Shutting down server...");
         exit(0);
 }

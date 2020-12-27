@@ -5,6 +5,8 @@
 #include <vector>
 #include <sstream>
 
+#include "logger.hpp"
+
 // Config entry point
 #ifndef MSG_SEPARATOR
 #define MSG_SEPARATOR '\31'
@@ -123,7 +125,7 @@ class msg{
                 int noOfSections = std::atoi(cmd.substr(std::distance(cmd.begin(), adjBeg), std::distance(cmd.begin(), begPl)).c_str());
                 int noOfArrivedSections = std::count(begPl, cmd.end(), separator) - 1;
 
-                std::cout<<"[DEBUG] Sections: Expected "<<noOfSections<<" found "<<noOfArrivedSections<<std::endl;
+                Debug.Log("Sections: Expected ", noOfSections, " found ", noOfArrivedSections);
 
                 if(noOfSections > noOfArrivedSections)
                 {
@@ -149,7 +151,7 @@ class msg{
                                                 return std::distance(cmd.begin(), i);
                                         }
                                 }
-                                throw new std::runtime_error("[ERROR] Could not enumerate sections.");
+                                throw std::runtime_error("[ERROR] Could not enumerate sections.");
                         }();
 
                         return {true, cmd.substr(0, endpos + 1), cmd.substr(endpos + 1)};
@@ -159,7 +161,7 @@ class msg{
                     return  {true, cmd.substr(0, cmd.find_last_of(separator) + 1), ""};
                 }
 
-                throw new std::runtime_error("[ERROR] Could not validate command.");
+                throw std::runtime_error("[ERROR] Could not validate command.");
         }
 
 };

@@ -10,11 +10,25 @@
 #include <algorithm>
 #include <signal.h>
 
+#include "logger.hpp"
+
 extern void driver_func(int clientDesc);
 extern void shut_down_proc(int signum);
 
+Logger Debug("DEBUG", Logger::LogLevel::Debug);
+Logger Warning("WARNING", Logger::LogLevel::Warning);
+Logger Info("INFO", Logger::LogLevel::Info);
+Logger Error("ERROR", Logger::LogLevel::Error);
+Logger Fatal("FATAL ERROR", Logger::LogLevel::Fatal);
+
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL Debug
+#endif
+
 int main(int argc, char * argv[])
 {
+        Logger::GlobalLogLevel = Logger::LogLevel::DEBUG_LEVEL;
+
         signal(SIGINT, shut_down_proc);
 
         int port = 1300;
@@ -31,7 +45,8 @@ int main(int argc, char * argv[])
 
         if(sock < 0)
         {
-                std::cout<<"[ERROR] Cannot create socket."<<std::endl;
+                Error.Log("Cannot create socket.");
+                exit(1);
         }
 
         setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse_addr_val, sizeof(reuse_addr_val));
@@ -43,21 +58,23 @@ int main(int argc, char * argv[])
 
         if(bind(sock, (sockaddr *) &addr, sizeof(sockaddr_in)) != 0)
         {
-                std::cout<<"[ERROR] Cannot bind socket."<<std::endl;
+                Error.Log("Cannot bind socket.");
                 exit(1);
         }
 
 
         if(listen(sock, backlogSize) != 0)
         {
-                std::cout<<"[ERROR] Cannot listen on the socket."<<std::endl;
+                Error.Log("Cannot listen on the socket.");
                 exit(1);
         }
+
+        Info.Log("Server is ready.");
 
         while(1)
         {
 
-                std::cout<<"[DEBUG] Listening for a new connection."<<std::endl;
+                Debug.Log("Listening for a new connection.");
 
                 sockaddr_in client_data = {};
                 socklen_t client_data_size = {};
@@ -69,10 +86,10 @@ int main(int argc, char * argv[])
                 }
                 else
                 {
-                        std::cout<<"[ERROR] Accept failed. "<<clientDesc<<std::endl;
+                        Error.Log("Accept failed.", clientDesc);
                 }
 
-                std::cout<<"[DEBUG] Fork Successful..."<<std::endl;
+                Debug.Log("Fork Successful...");
 
         }
 
