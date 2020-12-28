@@ -49,6 +49,7 @@
         "bit": "cpp",
         "chrono": "cpp",
         "thread": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "shared_mutex": "cpp"
     }
 }

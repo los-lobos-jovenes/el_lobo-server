@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <tuple>
-#include <mutex>
+#include <shared_mutex>
 
 class user {
     std::string name, pswd;
@@ -23,7 +23,7 @@ class user {
 class userContainer {
 
     static std::map<std::string, std::unique_ptr<user>> users;
-    static std::mutex protector;
+    static std::shared_mutex protector;
 
     public:
 
@@ -34,7 +34,7 @@ class userContainer {
 
         static bool addUser(std::string name, std::string pswd)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::unique_lock lock(protector);
 
             if(pswd == "")
             {
@@ -46,7 +46,7 @@ class userContainer {
         }
         static bool authenticateUser(std::string name, std::string pswd)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::shared_lock lock(protector);
 
             if(pswd == "")
             {
@@ -60,7 +60,7 @@ class userContainer {
         }
         static bool probeUser(std::string name)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::shared_lock lock(protector);
 
             if(users.find(name) != users.end())
             {
@@ -71,7 +71,7 @@ class userContainer {
 
         static void removeUser(std::string name)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::unique_lock lock(protector);
 
             users.erase(name);
         }

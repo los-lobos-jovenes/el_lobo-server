@@ -2,10 +2,12 @@
 #define _SUBSCRIBER_DB
 
 #include <map>
+#include <shared_mutex>
+#include <mutex>
 
 class subscriberDb
 {
-    static std::mutex protector;
+    static std::shared_mutex protector;
      // username, socket descriptor
     static std::map<std::string, int> subscribers;
 
@@ -13,13 +15,13 @@ class subscriberDb
 
     static void addSubscriber(std::string user, int desc)
     {
-        std::lock_guard<std::mutex> lock(protector);
+        std::shared_lock lock(protector);
 
         subscribers.insert({user, desc});
     }
     static int getSubscriberDescriptor(std::string user)
     {
-        std::lock_guard<std::mutex> lock(protector);
+        std::shared_lock lock(protector);
 
         const auto cs = subscribers.find(user);
         if(cs != subscribers.end())
@@ -31,14 +33,14 @@ class subscriberDb
 
     static void removeSubscriber(std::string user)
     {
-        std::lock_guard<std::mutex> lock(protector);
+        std::unique_lock lock(protector);
 
         subscribers.erase(user);
     }
 
     static void removeSubscriber(int desc)
     {
-        std::lock_guard<std::mutex> lock(protector);
+        std::unique_lock lock(protector);
         
         for (auto it = subscribers.begin(); it != subscribers.end(); ++it)
         {

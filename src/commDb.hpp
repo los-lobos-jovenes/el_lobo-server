@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <mutex>
-#include <condition_variable>
+#include <shared_mutex>
 
 class commEntry
 {
@@ -45,7 +45,7 @@ class commContainer
             \\-> the origin (the sender of the message)
             \\-> the message itself
     */
-    static std::mutex protector;
+    static std::shared_mutex protector;
     static std::map<std::string, std::multimap<std::string, commEntry>> msgs;
 
     public:
@@ -57,14 +57,14 @@ class commContainer
 
         static void processAndAcceptComm(commEntry c)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::shared_lock lock(protector);
 
             msgs[c.to].insert({c.from, c});
         }
 
         static std::vector<commEntry> pullCommsForUserFromUser(std::string receipent, std::string fromWho)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::shared_lock lock(protector);
 
             auto cs = msgs[receipent].equal_range(fromWho);
             std::vector<commEntry> retcs = {};
@@ -78,7 +78,7 @@ class commContainer
 
         static std::vector<std::string> peekPendingForUser(std::string receipent)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::shared_lock lock(protector);
 
             const auto &cs = msgs[receipent];
             std::vector<std::string> rets;
@@ -92,14 +92,14 @@ class commContainer
 
         static void deleteCommsForUserFromUser(std::string receipent, std::string fromWho)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::unique_lock lock(protector);
 
             msgs[receipent].erase(fromWho);
         }
 
         static void removeUser(std::string username)
         {
-            std::lock_guard<std::mutex> lock(protector);
+            std::unique_lock lock(protector);
 
             msgs.erase(username);
         }
