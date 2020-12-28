@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
         signal(SIGINT, shut_down_proc);
 
         int port = 1300;
-        int backlogSize = 2;
+        int backlogSize = 5;
         char reuse_addr_val = 0;
 
         if(argc >= 2)
@@ -81,8 +81,16 @@ int main(int argc, char * argv[])
                 int clientDesc = accept(sock, (sockaddr *) &client_data, &client_data_size);
                 if(clientDesc > 0)
                 {
-                        std::thread thr(driver_func, clientDesc);
-                        thr.detach();
+                        try
+                        {
+                                std::thread thr(driver_func, clientDesc);
+                                thr.detach();
+                        }
+                        catch(std::system_error &e)
+                        {
+                                Fatal.Log("Could not create new thread:", e.what());
+                                close(clientDesc);
+                        }
                 }
                 else
                 {

@@ -195,8 +195,8 @@ void serve_command(int clientDesc, std::string command)
                                         formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
                                         break;
                                 }
-
                                 userContainer::removeUser(username);
+                                subscriberDb::removeSubscriber(username);
                                 commContainer::removeUser(username);
                                 formAndWrite(clientDesc, "1", "RETN", "1", "BYE");
                         }
