@@ -30,6 +30,7 @@ int main(int argc, char * argv[])
         Logger::GlobalLogLevel = Logger::LogLevel::DEBUG_LEVEL;
 
         signal(SIGINT, shut_down_proc);
+        signal(SIGPIPE, SIG_IGN);
 
         int port = 1300;
         int backlogSize = 5;

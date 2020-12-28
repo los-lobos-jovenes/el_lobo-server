@@ -22,8 +22,12 @@ static void writeWrapper(int desc, std::string s)
         {
                 n = write(desc, s.substr(off).c_str(), s.substr(off).size());
                 off += n;
+                if(n <= 0)
+                {
+                        break;
+                }
         }
-        while(n < static_cast<int>(s.substr(off).size()) && n > 0);
+        while(n < static_cast<int>(s.substr(off).size()));
 
         if(n <= 0)
         {
