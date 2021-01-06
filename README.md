@@ -20,7 +20,7 @@ Z włączonym debugowaniem
 
 Z optymalizacją
 * poziom optymalizacji `-O3`
-* separator dziesiętnie `\31`
+* separator ósemkowo `\31`
 * logowanie na poziomie `Info`
 > make DEBUG=false
 
@@ -38,7 +38,7 @@ Składnia
 
 gdzie:
 
-* | oznacza separator (domyślnie dziesiętnie `\31`)
+* | oznacza separator (domyślnie ósemkowo `\31`)
 * Nagłówek, składający się z czterech charów, charakteryzuje polecenie/zwracane dane
 * wersja protokołu jest integerem, podawana celem zachowania kompatybilności
 * liczba argumentów to integer, opisuje liczbę następujących po sobie argumentów. Może wynieść 0
