@@ -233,6 +233,66 @@ void serve_command(int clientDesc, std::string command)
                 }
                 break;
 
+                case 2:
+                {
+                        if(header == "PULL")             // Pull unread messages, mark as read, do not delete
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+
+                                auto target = message[5];
+
+                                if(!userContainer::probeUser(target))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                        break;
+                                }
+
+                                auto msgs = commContainer::pullCommsForUserFromUser(username, target, true);
+
+                                for(const auto i : msgs)
+                                {
+                                    formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
+                                }
+                                formAndWrite(clientDesc, "1", "ENDT", "0");
+                                commContainer::deleteCommsForUserFromUser(username, target, false); 
+                        }
+                        else if(header == "APLL")       // Pull all messages, do not delete
+                        {
+                                auto username = message[3];
+                                auto password = message[4];
+
+                                if(!userContainer::authenticateUser(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                        break;
+                                }
+
+                                auto target = message[5];
+
+                                if(!userContainer::probeUser(target))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                        break;
+                                }
+
+                                auto msgs = commContainer::pullCommsForUserFromUser(username, target);
+
+                                for(const auto i : msgs)
+                                {
+                                    formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
+                                }
+                                formAndWrite(clientDesc, "1", "ENDT", "0");
+                        }
+                }
+                break;
+
                 default:
                 Debug.Log("Unknown protocol version.");
                 break;

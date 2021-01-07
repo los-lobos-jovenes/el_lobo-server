@@ -18,6 +18,7 @@ class commEntry
     public:
 
     std::string from, to, payload;
+    bool isUnread = true;
 
         commEntry(std::string from, std::string to, std::string payload)
         {
@@ -62,7 +63,7 @@ class commContainer
             msgs[c.to].insert({c.from, c});
         }
 
-        static std::vector<commEntry> pullCommsForUserFromUser(std::string receipent, std::string fromWho)
+        static std::vector<commEntry> pullCommsForUserFromUser(std::string receipent, std::string fromWho, bool unreadOnly = false)
         {
             std::shared_lock lock(protector);
 
@@ -71,7 +72,7 @@ class commContainer
 
             for(auto it = cs.first; it != cs.second; it++)
             {
-                retcs.push_back(it->second);
+                if(!unreadOnly || it->second.isUnread)retcs.push_back(it->second);
             }
             return retcs;
         }
@@ -90,11 +91,22 @@ class commContainer
             return rets;
         }
 
-        static void deleteCommsForUserFromUser(std::string receipent, std::string fromWho)
+        static void deleteCommsForUserFromUser(std::string receipent, std::string fromWho, bool doDelete = true)
         {
             std::unique_lock lock(protector);
 
-            msgs[receipent].erase(fromWho);
+            if(doDelete)
+            {
+                msgs[receipent].erase(fromWho);
+            }
+            else
+            {
+                auto cs = msgs[receipent].equal_range(fromWho);
+                for(auto it = cs.first; it != cs.second; it++)
+                {
+                    it->second.isUnread = false;
+                }
+            }
         }
 
         static void removeUser(std::string username)
