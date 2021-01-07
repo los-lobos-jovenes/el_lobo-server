@@ -284,12 +284,17 @@ void serve_command(int clientDesc, std::string command)
                                         break;
                                 }
 
-                                auto msgs = commContainer::pullCommsForUserFromUser(username, target);
-
-                                for(const auto i : msgs)
-                                {
-                                    formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
-                                }
+                                auto msgs1 = commContainer::pullCommsForUserFromUser(username, target);
+                                auto msgs2 = commContainer::pullCommsForUserFromUser(target, username);            // inverse of what is above - so messages I've sent to someone
+                                auto sender = [&clientDesc](auto &msgs){
+                                        for(const auto i : msgs)
+                                        {
+                                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                        }
+                                };
+                                sender(msgs1);
+                                formAndWrite(clientDesc, "1", "RETN", "1", "SEPARATTOR");
+                                sender(msgs2);
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
                         }
                 }

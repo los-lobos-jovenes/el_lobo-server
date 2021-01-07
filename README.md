@@ -62,7 +62,7 @@ Nazwę polecenia przesyłamy w nagłówku. Wersja protokołu 1.
 |  SUBS |    1   |                      Subskrybuj                                 |            \|1\|SUBS\|2\|username\|password\|           |                                    \|1\|RETN\|1\|SUBSCRIBED\|                                  | \|1\|RETN\|2\|ERROR\|AUTHENTICATION_FAILED\| |
 |  USUB |    1   |           Zakończ subskrypcję na tym gnieździe                  |            \|1\|USUB\|2\|username\|password\|           |                                    \|1\|RETN\|1\|UNSUBSCRIBED\|                                  | \|1\|RETN\|2\|ERROR\|AUTHENTICATION_FAILED\| |
 |  PULL |    2   |         Pobierz nieprzeczytane wiadomości od użytkownika        |       \|2\|PULL\|3\|username\|password\|fromWho\|       | \|1\|RETN\|2\|timestamp\|wiadomosc_1\| \|1\|RETN\|2\|timestamp\|wiadomosc_2\| ...  \|1\|ENDT\| |  \|1\|RETN\|2\|ERROR\|AUTENTICATION_FAILED\| |
-|  APLL |    2   |         Pobierz wszystkie wiadomości od użytkownika             |       \|2\|APLL\|3\|username\|password\|fromWho\|       | \|1\|RETN\|2\|timestamp\|wiadomosc_1\| \|1\|RETN\|2\|timestamp\|wiadomosc_2\| ...  \|1\|ENDT\| |  \|1\|RETN\|2\|ERROR\|AUTENTICATION_FAILED\| |
+|  APLL |    2   | Pobierz wszystkie wiadomości od użytkownika i te które wysłałeś użytkownikowi |       \|2\|APLL\|3\|username\|password\|fromWho\|       | \|1\|RETN\|2\|timestamp\|wiadomosc_1\| \|1\|RETN\|2\|timestamp\|wiadomosc_2\| ...  \|1\|ENDT\| |  \|1\|RETN\|2\|ERROR\|AUTENTICATION_FAILED\| |
 
 
 Uwagi.
@@ -72,6 +72,8 @@ Uwagi.
 * Mechanizm subskrypcji wysyła informacje o nowej wiadomości do subskrybenta. Po przełączeniu się na nowe gniazdo (ponownym połączeniu), trzeba subskrybować od nowa.
 Zwracana wiadomość jest postaci `|1|ALRT|2|SUBSCRIPTION_ALERT|whoHasSentTheMessage-username|`.
 * **PULL** w wersji `2` nie usuwa wiadomości, jedynie oznacza je jako przeczytane.
+* 2**APLL** pobiera zarówno otrzymane jak i wysłane wiadomości. Bloki rozdzielone są przez `|1|RETN|1|SEPARATOR|`. Klient musi sam uporządkować je we właściwej kolejności.
+* Mieszanie 2**PULL**, 2**APLL** i 1**PULL** to zły pomysł. W interesie użytkownika jest stosowanie klienta, który korzysta z jednego rodzaju protokołów.
 
 ### Zwracane przez serwer
 | Nazwa | Wersja |                            Przeznaczenie                                |
