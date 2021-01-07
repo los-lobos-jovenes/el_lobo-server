@@ -12,68 +12,68 @@
 #define MSG_SEPARATOR '\31'
 #endif
 
-class msg{
+class msg
+{
 
-    std::vector<std::string> parts;
-    static constexpr char separator = MSG_SEPARATOR;
+        std::vector<std::string> parts;
+        static constexpr char separator = MSG_SEPARATOR;
 
-    public:
-
+public:
         msg() = default;
 
         template <typename T>
-        msg& form(const T &part)
+        msg &form(const T &part)
         {
-            parts.push_back(part);
-            return *this;
+                parts.push_back(part);
+                return *this;
         }
 
-        template <typename T, typename ... Targs>
-        msg& form(const T &part, Targs ...parts)
+        template <typename T, typename... Targs>
+        msg &form(const T &part, Targs... parts)
         {
-            this->parts.push_back(part);
-            form(parts...);
-            return *this;
+                this->parts.push_back(part);
+                form(parts...);
+                return *this;
         }
 
         std::string concat() const
         {
-            std::string sum = "";
-            sum += separator;
-
-            for(auto i : parts)
-            {
-                sum += i;
+                std::string sum = "";
                 sum += separator;
-            }
-            return sum;
+
+                for (auto i : parts)
+                {
+                        sum += i;
+                        sum += separator;
+                }
+                return sum;
         }
 
         std::string operator[](std::size_t no) const
         {
-            return this->extract(no);
+                return this->extract(no);
         }
 
         std::string extract(std::size_t no) const
         {
-            if(no < parts.size())
-            {
-                return parts[no];
-            }
-            return "";
+                if (no < parts.size())
+                {
+                        return parts[no];
+                }
+                return "";
         }
 
-        msg& decode(std::string s)
+        msg &decode(std::string s)
         {
-            std::stringstream ss;
-            ss << s;
-            std::string part;
+                std::stringstream ss;
+                ss << s;
+                std::string part;
 
-            while (getline(ss, part, separator))
-            {
-                this->parts.push_back(part);
-            }
-            return *this;
+                while (getline(ss, part, separator))
+                {
+                        this->parts.push_back(part);
+                }
+                return *this;
         }
 
         /*
@@ -84,22 +84,22 @@ class msg{
         */
         static std::tuple<bool, std::string, std::string> fixupCommand(std::string cmd)
         {
-                if(cmd.size() < 9)
+                if (cmd.size() < 9)
                 {
                         // No head and version found
                         return {false, "", ""};
                 }
 
-                if(cmd[0] != separator)
+                if (cmd[0] != separator)
                 {
                         // Invalid command format - no sep version - it was probably malformed, so let's reject some section and give it a chance
                         auto pp = cmd.find_first_of(separator);
-                        if(pp == std::string::npos)
+                        if (pp == std::string::npos)
                         {
                                 // Probably not a payload at all.
                                 return {true, "", ""};
                         }
-                        return {true, "", cmd.substr(pp) };
+                        return {true, "", cmd.substr(pp)};
                 }
                 /*
                 XXX - better culling - non critical, no crashes will occur
@@ -119,7 +119,7 @@ class msg{
                 const auto adjBeg = cmd.begin() + 8;
                 const auto begPl = std::find(adjBeg, cmd.end(), separator);
 
-                if(begPl == cmd.end())
+                if (begPl == cmd.end())
                 {
                         // No valid payload
                         return {false, "", ""};
@@ -130,7 +130,7 @@ class msg{
 
                 Debug.Log("Sections: Expected ", noOfSections, " found ", noOfArrivedSections);
 
-                if(noOfSections > noOfArrivedSections)
+                if (noOfSections > noOfArrivedSections)
                 {
                         // Not all of the command has arrived yet
                         return {false, "", ""};
@@ -141,15 +141,15 @@ class msg{
 
                         int secNo = 0;
 
-                        size_t endpos = 
-                        [&]() -> size_t {
-                                for(auto i = begPl; i != cmd.end(); i++)
+                        size_t endpos =
+                            [&]() -> size_t {
+                                for (auto i = begPl; i != cmd.end(); i++)
                                 {
-                                        if(*i == separator)
+                                        if (*i == separator)
                                         {
                                                 secNo++;
                                         }
-                                        if(secNo == noOfSections + 1)
+                                        if (secNo == noOfSections + 1)
                                         {
                                                 return std::distance(cmd.begin(), i);
                                         }
@@ -161,12 +161,11 @@ class msg{
                 }
                 else
                 {
-                    return  {true, cmd.substr(0, cmd.find_last_of(separator) + 1), ""};
+                        return {true, cmd.substr(0, cmd.find_last_of(separator) + 1), ""};
                 }
 
                 throw std::runtime_error("[ERROR] Could not validate command.");
         }
-
 };
 
 #undef MSG_SEPARATOR

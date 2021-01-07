@@ -22,21 +22,20 @@ static void writeWrapper(int desc, std::string s)
         {
                 n = write(desc, s.substr(off).c_str(), s.substr(off).size());
                 off += n;
-                if(n <= 0)
+                if (n <= 0)
                 {
                         break;
                 }
-        }
-        while(n < static_cast<int>(s.substr(off).size()));
+        } while (n < static_cast<int>(s.substr(off).size()));
 
-        if(n <= 0)
+        if (n <= 0)
         {
                 throw std::runtime_error("[ERROR] Lost write permission to a socket or client abruptly disconnected!");
         }
 }
 
-template <typename ...T>
-static void formAndWrite(int clientDesc, T ...s)
+template <typename... T>
+static void formAndWrite(int clientDesc, T... s)
 {
         msg tmp;
         tmp.form(s...);
@@ -49,12 +48,12 @@ void notify(std::string target, std::string fromWho)
         try
         {
                 auto ret = subscriberDb::getSubscriberDescriptor(target);
-                if(ret != -1)
-                {      
+                if (ret != -1)
+                {
                         formAndWrite(ret, "1", "ALRT", "2", "SUBSCRIPTION_ALERT", fromWho.c_str());
                 }
         }
-        catch(std::exception &e)
+        catch (std::exception &e)
         {
                 Error.Log("Could not notify subscription client. Releasing subscription for", target);
                 subscriberDb::removeSubscriber(target);
@@ -64,7 +63,7 @@ void notify(std::string target, std::string fromWho)
 // At this point we have something that looks like a valid command. Let's parse it!
 void serve_command(int clientDesc, std::string command)
 {
-        if(command.empty())
+        if (command.empty())
         {
                 return;
         }
@@ -73,246 +72,245 @@ void serve_command(int clientDesc, std::string command)
         message.decode(command.substr(1));
 
         auto version = std::atoi(message[0].c_str()); // Returns 0 on error - fine - we have 1 as lowes number
-        auto header  = message[1];
+        auto header = message[1];
 
         Debug.Log("Serving protocol version ", version);
-        
-        switch(version)
+
+        switch (version)
         {
-                case 1:
+        case 1:
+        {
+                if (header == "CREA") // Create user
                 {
-                        if(header == "CREA") // Create user
+                        auto username = message[3];
+                        if (username.empty())
                         {
-                                auto username = message[3];
-                                if(username.empty())
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_EMPTY");
-                                        break;
-                                }
-
-                                auto password = message[4];
-                                if(password.empty())
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "NO_PSWD_PROVIDED");
-                                        break;
-                                }
-
-                                if(!userContainer::isValidString(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_CHARACTERS_IN_DATA");
-                                        break;
-                                }
-
-                                auto result = userContainer::addUser(username, password);
-                                if(!result)
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_TAKEN");
-                                        break;
-                                }
-                                formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_EMPTY");
+                                break;
                         }
-                        else if(header == "SEND") // Send message
+
+                        auto password = message[4];
+                        if (password.empty())
                         {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-
-                                auto payload = message[6];
-
-                                if(payload.empty())
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "MESSAGE_IS_EMPTY");
-                                        break;
-                                }
-
-                                auto target = message[5];
-
-                                if(!userContainer::probeUser(target))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
-                                        break;
-                                }
-
-                                commContainer::processAndAcceptComm(commEntry(username, target, payload));
-                                formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
-
-                                std::thread notificator(notify, target, username);
-                                notificator.detach();
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "NO_PSWD_PROVIDED");
+                                break;
                         }
-                        else if(header == "PEND") // Get list of pending messages from users
+
+                        if (!userContainer::isValidString(username, password))
                         {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-
-                                auto ret = commContainer::peekPendingForUser(username);
-
-                                for(const auto i : ret)
-                                {
-                                    formAndWrite(clientDesc, "1", "RETN", "1", i);
-                                }
-                                formAndWrite(clientDesc, "1", "ENDT", "0");
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_CHARACTERS_IN_DATA");
+                                break;
                         }
-                        else if(header == "PULL") // Pull pending messages from user
+
+                        auto result = userContainer::addUser(username, password);
+                        if (!result)
                         {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-
-                                auto target = message[5];
-
-                                if(!userContainer::probeUser(target))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
-                                        break;
-                                }
-
-                                auto msgs = commContainer::pullCommsForUserFromUser(username, target);
-
-                                for(const auto i : msgs)
-                                {
-                                    formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
-                                    commContainer::deleteCommsBySharedPtr(i, username);
-                                }
-                                formAndWrite(clientDesc, "1", "ENDT", "0");
-                                //commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_TAKEN");
+                                break;
                         }
-                        else if(header == "UNRG") // Delete own user (unregister)
-                        {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-                                userContainer::removeUser(username);
-                                subscriberDb::removeSubscriber(username);
-                                commContainer::removeUser(username);
-                                formAndWrite(clientDesc, "1", "RETN", "1", "BYE");
-                        }
-                        else if(header == "SUBS")
-                        {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-                                subscriberDb::addSubscriber(username, clientDesc);
-                                formAndWrite(clientDesc, "1", "RETN", "1", "SUBSCRIBED");
-                        }
-                        else if(header == "USUB")
-                        {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-                                subscriberDb::removeSubscriber(username);
-                                formAndWrite(clientDesc, "1", "RETN", "1", "UNSUBSCRIBED");
-                        }
+                        formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
                 }
-                break;
-
-                case 2:
+                else if (header == "SEND") // Send message
                 {
-                        if(header == "PULL")             // Pull unread messages, mark as read, do not delete
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
                         {
-                                auto username = message[3];
-                                auto password = message[4];
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
 
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
+                        auto payload = message[6];
 
-                                auto target = message[5];
+                        if (payload.empty())
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "MESSAGE_IS_EMPTY");
+                                break;
+                        }
 
-                                if(!userContainer::probeUser(target))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
-                                        break;
-                                }
+                        auto target = message[5];
 
-                                auto msgs = commContainer::pullCommsForUserFromUser(username, target, true);
+                        if (!userContainer::probeUser(target))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                break;
+                        }
 
-                                for(const auto i : msgs)
+                        commContainer::processAndAcceptComm(commEntry(username, target, payload));
+                        formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
+
+                        std::thread notificator(notify, target, username);
+                        notificator.detach();
+                }
+                else if (header == "PEND") // Get list of pending messages from users
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+
+                        auto ret = commContainer::peekPendingForUser(username);
+
+                        for (const auto i : ret)
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "1", i);
+                        }
+                        formAndWrite(clientDesc, "1", "ENDT", "0");
+                }
+                else if (header == "PULL") // Pull pending messages from user
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+
+                        auto target = message[5];
+
+                        if (!userContainer::probeUser(target))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                break;
+                        }
+
+                        auto msgs = commContainer::pullCommsForUserFromUser(username, target);
+
+                        for (const auto i : msgs)
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                commContainer::deleteCommsBySharedPtr(i, username);
+                        }
+                        formAndWrite(clientDesc, "1", "ENDT", "0");
+                        //commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
+                }
+                else if (header == "UNRG") // Delete own user (unregister)
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+                        userContainer::removeUser(username);
+                        subscriberDb::removeSubscriber(username);
+                        commContainer::removeUser(username);
+                        formAndWrite(clientDesc, "1", "RETN", "1", "BYE");
+                }
+                else if (header == "SUBS")
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+                        subscriberDb::addSubscriber(username, clientDesc);
+                        formAndWrite(clientDesc, "1", "RETN", "1", "SUBSCRIBED");
+                }
+                else if (header == "USUB")
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+                        subscriberDb::removeSubscriber(username);
+                        formAndWrite(clientDesc, "1", "RETN", "1", "UNSUBSCRIBED");
+                }
+        }
+        break;
+
+        case 2:
+        {
+                if (header == "PULL") // Pull unread messages, mark as read, do not delete
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+
+                        auto target = message[5];
+
+                        if (!userContainer::probeUser(target))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                break;
+                        }
+
+                        auto msgs = commContainer::pullCommsForUserFromUser(username, target, true);
+
+                        for (const auto i : msgs)
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                commContainer::deleteCommsBySharedPtr(i, username, false);
+                        }
+                        formAndWrite(clientDesc, "1", "ENDT", "0");
+                        //commContainer::deleteCommsForUserFromUser(username, target, false);
+                }
+                else if (header == "APLL") // Pull all messages, do not delete
+                {
+                        auto username = message[3];
+                        auto password = message[4];
+
+                        if (!userContainer::authenticateUser(username, password))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
+                                break;
+                        }
+
+                        auto target = message[5];
+
+                        if (!userContainer::probeUser(target))
+                        {
+                                formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
+                                break;
+                        }
+
+                        auto msgs1 = commContainer::pullCommsForUserFromUser(username, target);
+                        auto msgs2 = commContainer::pullCommsForUserFromUser(target, username); // inverse of what is above - so messages I've sent to someone
+                        auto sender = [&clientDesc](auto &msgs) {
+                                for (const auto i : msgs)
                                 {
                                         formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
-                                        commContainer::deleteCommsBySharedPtr(i, username, false);
                                 }
-                                formAndWrite(clientDesc, "1", "ENDT", "0");
-                                //commContainer::deleteCommsForUserFromUser(username, target, false); 
-                        }
-                        else if(header == "APLL")       // Pull all messages, do not delete
-                        {
-                                auto username = message[3];
-                                auto password = message[4];
-
-                                if(!userContainer::authenticateUser(username, password))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "AUTHENTICATION_FAILED");
-                                        break;
-                                }
-
-                                auto target = message[5];
-
-                                if(!userContainer::probeUser(target))
-                                {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_TARGET");
-                                        break;
-                                }
-
-                                auto msgs1 = commContainer::pullCommsForUserFromUser(username, target);
-                                auto msgs2 = commContainer::pullCommsForUserFromUser(target, username);            // inverse of what is above - so messages I've sent to someone
-                                auto sender = [&clientDesc](auto &msgs){
-                                        for(const auto i : msgs)
-                                        {
-                                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
-                                        }
-                                };
-                                sender(msgs1);
-                                formAndWrite(clientDesc, "1", "RETN", "1", "SEPARATTOR");
-                                sender(msgs2);
-                                formAndWrite(clientDesc, "1", "ENDT", "0");
-                        }
+                        };
+                        sender(msgs1);
+                        formAndWrite(clientDesc, "1", "RETN", "1", "SEPARATTOR");
+                        sender(msgs2);
+                        formAndWrite(clientDesc, "1", "ENDT", "0");
                 }
-                break;
+        }
+        break;
 
-                default:
+        default:
                 Debug.Log("Unknown protocol version.");
                 break;
         }
-        
 }
 
 void driver_func(int clientDesc)
 {
         std::thread::id this_id = std::this_thread::get_id();
-        try 
+        try
         {
                 Debug.Log("Started thread to serve client; thread id:", this_id, "; client id:", clientDesc);
 
@@ -324,12 +322,12 @@ void driver_func(int clientDesc)
                 do
                 {
                         last = read(clientDesc, reinterpret_cast<void *>(&buf[0]), sizeof(char) * 100);
-                        if(command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
+                        if (command.size() > 550 && DO_LIMIT_COMMAND_SIZE)
                         {
                                 Debug.Log("Disconnecting - command size exceeds all expectations; thread id:", this_id, "; client id:", clientDesc);
                                 break;
                         }
-                        if(last <= 0)
+                        if (last <= 0)
                         {
                                 Debug.Log("Reacting to disconnect; thread id:", this_id, "; client id:", clientDesc);
                         }
@@ -337,7 +335,7 @@ void driver_func(int clientDesc)
                         command.append(buf.data(), last);
                         auto fixed = msg::fixupCommand(command);
 
-                        while(std::get<0>(fixed) == true)
+                        while (std::get<0>(fixed) == true)
                         {
                                 command = std::get<2>(fixed);
                                 Debug.Log("Queued part of command is:", command, " vs real:", std::get<1>(fixed));
@@ -346,10 +344,9 @@ void driver_func(int clientDesc)
                                 fixed = msg::fixupCommand(command);
                         }
 
-
-                }while(last > 0);
+                } while (last > 0);
         }
-        catch(std::exception &e)
+        catch (std::exception &e)
         {
                 Fatal.Log("Exception in thread - killing thread, closing connection; thread id:", this_id, "; client id:", clientDesc, "; reason:", e.what());
         }

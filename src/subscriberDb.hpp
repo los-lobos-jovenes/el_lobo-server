@@ -10,11 +10,10 @@
 class subscriberDb
 {
     static std::shared_mutex protector;
-     // username, socket descriptor
+    // username, socket descriptor
     static std::map<std::string, int> subscribers;
 
-    public:
-
+public:
     static void addSubscriber(std::string user, int desc)
     {
         std::shared_lock lock(protector);
@@ -26,7 +25,7 @@ class subscriberDb
         std::shared_lock lock(protector);
 
         const auto cs = subscribers.find(user);
-        if(cs != subscribers.end())
+        if (cs != subscribers.end())
         {
             return cs->second;
         }
@@ -43,7 +42,7 @@ class subscriberDb
     static void removeSubscriber(int desc)
     {
         std::unique_lock lock(protector);
-        
+
         for (auto it = subscribers.begin(); it != subscribers.end(); ++it)
         {
             if (it->second == desc)
