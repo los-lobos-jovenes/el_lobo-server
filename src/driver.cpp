@@ -184,10 +184,11 @@ void serve_command(int clientDesc, std::string command)
 
                                 for(const auto i : msgs)
                                 {
-                                    formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
+                                    formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                    commContainer::deleteCommsBySharedPtr(i, username);
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
-                                commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
+                                //commContainer::deleteCommsForUserFromUser(username, target); // Only when the tranmission ended succesfully purge buffers. If we lose connections, all new messages will still wait for us.
                         }
                         else if(header == "UNRG") // Delete own user (unregister)
                         {
@@ -258,10 +259,11 @@ void serve_command(int clientDesc, std::string command)
 
                                 for(const auto i : msgs)
                                 {
-                                    formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
+                                        formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                        commContainer::deleteCommsBySharedPtr(i, username, false);
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
-                                commContainer::deleteCommsForUserFromUser(username, target, false); 
+                                //commContainer::deleteCommsForUserFromUser(username, target, false); 
                         }
                         else if(header == "APLL")       // Pull all messages, do not delete
                         {
@@ -286,7 +288,7 @@ void serve_command(int clientDesc, std::string command)
 
                                 for(const auto i : msgs)
                                 {
-                                    formAndWrite(clientDesc, "1", "RETN", "2", i.getTimestampStr(), i.payload);
+                                    formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
                                 }
                                 formAndWrite(clientDesc, "1", "ENDT", "0");
                         }

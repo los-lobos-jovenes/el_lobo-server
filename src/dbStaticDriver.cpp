@@ -3,7 +3,7 @@
 #include "subscriberDb.hpp"
 #include "logger.hpp"
 
-std::map<std::string, std::multimap<std::string, commEntry>> commContainer::msgs;
+std::map<std::string, std::multimap<std::string, std::shared_ptr<commEntry>>> commContainer::msgs;
 std::shared_mutex commContainer::protector;
 
 std::shared_mutex userContainer::protector;

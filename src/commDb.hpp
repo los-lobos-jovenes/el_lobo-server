@@ -8,15 +8,13 @@
 #include <algorithm>
 #include <mutex>
 #include <shared_mutex>
+#include <memory>
 
-class commEntry
+#include "logger.hpp"
+
+struct commEntry
 {
     std::chrono::time_point<std::chrono::system_clock> timestamp;
-
-    friend class commContainer;
-
-    public:
-
     std::string from, to, payload;
     bool isUnread = true;
 
@@ -47,7 +45,7 @@ class commContainer
             \\-> the message itself
     */
     static std::shared_mutex protector;
-    static std::map<std::string, std::multimap<std::string, commEntry>> msgs;
+    static std::map<std::string, std::multimap<std::string, std::shared_ptr<commEntry>>> msgs;
 
     public:
 
@@ -60,19 +58,19 @@ class commContainer
         {
             std::shared_lock lock(protector);
 
-            msgs[c.to].insert({c.from, c});
+            msgs[c.to].insert({ c.from, std::make_shared<commEntry>(c) });
         }
 
-        static std::vector<commEntry> pullCommsForUserFromUser(std::string receipent, std::string fromWho, bool unreadOnly = false)
+        static std::vector<std::shared_ptr<commEntry>> pullCommsForUserFromUser(std::string receipent, std::string fromWho, bool unreadOnly = false)
         {
             std::shared_lock lock(protector);
 
             auto cs = msgs[receipent].equal_range(fromWho);
-            std::vector<commEntry> retcs = {};
+            std::vector<std::shared_ptr<commEntry>> retcs = {};
 
             for(auto it = cs.first; it != cs.second; it++)
             {
-                if(!unreadOnly || it->second.isUnread)retcs.push_back(it->second);
+                if(!unreadOnly || it->second->isUnread)retcs.push_back(it->second);
             }
             return retcs;
         }
@@ -104,8 +102,35 @@ class commContainer
                 auto cs = msgs[receipent].equal_range(fromWho);
                 for(auto it = cs.first; it != cs.second; it++)
                 {
-                    it->second.isUnread = false;
+                    it->second->isUnread = false;
                 }
+            }
+        }
+
+        static void deleteCommsBySharedPtr(std::shared_ptr<commEntry> elem, std::string receipent, bool doDelete = true)
+        {
+            std::unique_lock lock(protector);
+
+            auto& subset = msgs[receipent];
+
+            if(doDelete)
+            {
+                for(auto i = subset.begin(); i != subset.end();)
+                {
+                    if(i->second.get() == elem.get())
+                    {
+                        i = subset.erase(i);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                    
+                }
+            }
+            else
+            {
+                elem->isUnread = false;
             }
         }
 

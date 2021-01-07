@@ -22,16 +22,18 @@ class msg{
         msg() = default;
 
         template <typename T>
-        void form(const T &part)
+        msg& form(const T &part)
         {
             parts.push_back(part);
+            return *this;
         }
 
         template <typename T, typename ... Targs>
-        void form(const T &part, Targs ...parts)
+        msg& form(const T &part, Targs ...parts)
         {
             this->parts.push_back(part);
             form(parts...);
+            return *this;
         }
 
         std::string concat() const
@@ -61,7 +63,7 @@ class msg{
             return "";
         }
 
-        void decode(std::string s)
+        msg& decode(std::string s)
         {
             std::stringstream ss;
             ss << s;
@@ -71,6 +73,7 @@ class msg{
             {
                 this->parts.push_back(part);
             }
+            return *this;
         }
 
         /*
