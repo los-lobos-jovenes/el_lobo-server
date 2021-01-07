@@ -16,13 +16,17 @@ Z włączonym debugowaniem
 * symbole dla gdb
 * użycie `;` jako separatora
 * logowanie na poziomie `Debug`
-> make
+> make DEBUG=true
 
 Z optymalizacją
 * poziom optymalizacji `-O3`
 * separator ósemkowo `\31`
 * logowanie na poziomie `Info`
-> make DEBUG=false
+> make
+
+Mieszany tryb
+* jak z optymalizacją, ale logowanie na poziomie `Debug`
+> make DEBUG=some
 
 ## Uruchomienie
 

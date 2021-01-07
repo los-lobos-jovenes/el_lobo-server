@@ -4,20 +4,24 @@ SRCZ= src/main.cpp src/dbStaticDriver.cpp src/driver.cpp
 HDRZ=
 INC= -I src/
 TRGT= lobo
-UBSAN= -fsanitize=address -fsanitize=leak -fsanitize=undefined
+UBSAN=
 OPT=
-DEBUG?=true
+DEBUG?=false
 
 ifeq ($(OS),Windows_NT)
 #TRGT= lobo.exe
 $(error It will not work on Windows)
 endif
 
-ifeq ($(DEBUG), false)
-UBSAN= 
-OPT += -O3 -DDEBUG_LEVEL=Info
-else
+ifeq ($(DEBUG), true)
 OPT += -g -DMSG_SEPARATOR=\'\;\' -DDEBUG_LEVEL=Debug
+UBSAN = -fsanitize=address -fsanitize=leak -fsanitize=undefined
+else ifeq ($(DEBUG), some)
+UBSAN =
+OPT += -O3 -DDEBUG_LEVEL=Debug
+else
+UBSAN =
+OPT += -O3 -DDEBUG_LEVEL=Info
 endif
 
 all: $(SRCZ) $(HDRZ)
