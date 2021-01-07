@@ -28,10 +28,11 @@ struct commEntry
         }
 
         // https://stackoverflow.com/questions/31255486/c-how-do-i-convert-a-stdchronotime-point-to-long-and-back
-        char * getTimestampStr() const
+        auto getTimestampStr() const
         {
             std::time_t t = std::chrono::system_clock::to_time_t(timestamp);
-            return ctime(&t);
+            return std::to_string(t);
+            //return ctime(&t);
         }
 
 };
