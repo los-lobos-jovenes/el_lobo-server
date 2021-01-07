@@ -9,6 +9,8 @@
 #include <mutex>
 #include <shared_mutex>
 #include <memory>
+#include <fstream>
+#include <filesystem>
 
 #include "logger.hpp"
 
@@ -17,6 +19,14 @@ struct commEntry
     std::chrono::time_point<std::chrono::system_clock> timestamp;
     std::string from, to, payload;
     bool isUnread = true;
+
+        commEntry(std::string from, std::string to, std::string payload, std::chrono::nanoseconds reps, bool isUnread) : timestamp(reps)
+        {
+            this->from = from;
+            this->to = to;
+            this->payload = payload;
+            this->isUnread = isUnread;
+        }
 
         commEntry(std::string from, std::string to, std::string payload)
         {
@@ -140,6 +150,98 @@ class commContainer
             std::unique_lock lock(protector);
 
             msgs.erase(username);
+        }
+
+        static void dumpDb(std::string filename = "comms.db")
+        {
+            std::unique_lock lock(protector);
+
+            if(std::filesystem::exists(filename))
+            {
+                std::filesystem::copy_file(filename, filename + ".bak", std::filesystem::copy_options::overwrite_existing);
+            }
+
+            std::ofstream out(filename, std::ios::trunc | std::ios::binary);
+
+            auto writeHelper = [&out](auto type)
+            {
+                auto tt = type;
+                out.write(reinterpret_cast<const char *>(&tt), sizeof(decltype(tt)));
+            };
+            
+            for(const auto &ms : msgs)
+            {
+                writeHelper(ms.first.size());
+                out.write(ms.first.c_str(), ms.first.size());
+
+                writeHelper(ms.second.size());
+                for(const auto &i : ms.second)
+                {
+                    writeHelper(i.first.size());
+                    out.write(i.first.c_str(), i.first.size());
+
+                    writeHelper(i.second->to.size());
+                    out.write(reinterpret_cast<const char*>(i.second->to.c_str()), i.second->to.size());
+                    writeHelper(i.second->from.size());
+                    out.write(reinterpret_cast<const char*>(i.second->from.c_str()), i.second->from.size());
+                    writeHelper(i.second->payload.size());
+                    out.write(reinterpret_cast<const char*>(i.second->payload.c_str()), i.second->payload.size());
+
+                    writeHelper(i.second->timestamp.time_since_epoch().count());
+                    writeHelper(i.second->isUnread);
+                }
+            }
+            out.close();
+        }
+
+        static bool loadDb(std::string filename = "comms.db")
+        {
+            std::unique_lock lock(protector);
+
+            std::ifstream in(filename, std::ios::binary);
+            if(!in.is_open())
+            {
+                return false;
+            }
+            if(in.peek() == EOF)
+            {
+                return false;
+            }
+
+            std::string rec, targ, ff, from, to, pl;
+            bool unread = false;
+            std::chrono::system_clock::rep clk_reps = 0;
+            decltype(rec.size()) helper = 0;
+
+            auto readStringHelper = [&](std::string &s) -> void {
+                in.read(reinterpret_cast<char*>(&helper), sizeof(decltype(helper)));
+                s.resize(helper);
+                in.read(&s[0], s.size());
+            };
+
+            while(in.peek() != EOF)
+            {
+                readStringHelper(targ);
+                std::size_t n = 0;
+                in.read(reinterpret_cast<char*>(&n), sizeof(std::size_t));
+
+                Debug.Log("Restoring messages to ", targ, n);
+
+                while(n--)
+                {
+                    readStringHelper(ff);
+                    readStringHelper(to);
+                    readStringHelper(from);
+                    readStringHelper(pl);
+                    in.read(reinterpret_cast<char*>(&clk_reps), sizeof(decltype(clk_reps)));
+                    in.read(reinterpret_cast<char*>(&unread), sizeof(bool));
+                    Debug.Log("->It is", to, from, std::to_string(clk_reps), std::to_string(unread), pl);
+                    msgs[targ].insert({ ff, std::make_shared<commEntry>(from, to, pl, std::chrono::nanoseconds(clk_reps), unread) });
+                }
+            }
+            in.close();
+
+            return true;
         }
 };
 

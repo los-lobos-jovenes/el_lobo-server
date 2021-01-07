@@ -11,6 +11,9 @@
 #include <signal.h>
 
 #include "logger.hpp"
+#include "commDb.hpp"
+#include "subscriberDb.hpp"
+#include "user.hpp"
 
 extern void driver_func(int clientDesc);
 extern void shut_down_proc(int signum);
@@ -68,6 +71,19 @@ int main(int argc, char * argv[])
         {
                 Error.Log("Cannot listen on the socket.");
                 exit(1);
+        }
+
+        if(commContainer::loadDb())
+        {
+                Info.Log("Restored message database.");
+        }
+        /*if(subscriberDb::loadDb())
+        {
+                Info.Log("Restored subscribers database.");
+        }*/
+        if(userContainer::loadDb())
+        {
+                Info.Log("Restored user database.");
         }
 
         Info.Log("Server is ready.");

@@ -84,7 +84,6 @@ void serve_command(int clientDesc, std::string command)
                         if(header == "CREA") // Create user
                         {
                                 auto username = message[3];
-
                                 if(username.empty())
                                 {
                                         formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_EMPTY");
@@ -92,21 +91,24 @@ void serve_command(int clientDesc, std::string command)
                                 }
 
                                 auto password = message[4];
-
                                 if(password.empty())
                                 {
                                         formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "NO_PSWD_PROVIDED");
                                         break;
                                 }
 
-                                auto result = userContainer::addUser(username, password);
+                                if(!userContainer::isValidString(username, password))
+                                {
+                                        formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "INVALID_CHARACTERS_IN_DATA");
+                                        break;
+                                }
 
+                                auto result = userContainer::addUser(username, password);
                                 if(!result)
                                 {
                                         formAndWrite(clientDesc, "1", "RETN", "2", "ERROR", "USERNAME_TAKEN");
                                         break;
                                 }
-                                
                                 formAndWrite(clientDesc, "1", "RETN", "1", "SUCCESS");
                         }
                         else if(header == "SEND") // Send message
@@ -360,6 +362,11 @@ void driver_func(int clientDesc)
 void shut_down_proc(int signum)
 {
         UNUSED(signum);
+
+        Info.Log("Saving databases...");
+        userContainer::dumpDb();
+        //subscriberDb::dumpDb();
+        commContainer::dumpDb();
 
         Info.Log("Shutting down server...");
         exit(0);

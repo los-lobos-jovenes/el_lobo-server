@@ -1,3 +1,5 @@
 lobo
 DRAFT
 /out
+*.db
+*.db.bak
