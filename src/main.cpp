@@ -28,12 +28,23 @@ Logger Fatal("FATAL ERROR", Logger::LogLevel::Fatal);
 #define DEBUG_LEVEL Debug
 #endif
 
+[[noreturn]]
+void terminator()
+{
+        commContainer::dumpDb("comms.fail.db");
+        userContainer::dumpDb("user.fail.db");
+        Fatal.Log("Fatal termination event. Databases saved in emergency mode.");
+        std::abort();
+}
+
 int main(int argc, char * argv[])
 {
         Logger::GlobalLogLevel = Logger::LogLevel::DEBUG_LEVEL;
 
         signal(SIGINT, shut_down_proc);
         signal(SIGPIPE, SIG_IGN);
+
+        std::set_terminate(&terminator);
 
         int port = 1300;
         int backlogSize = 5;
