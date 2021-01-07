@@ -231,7 +231,7 @@ public:
                 readStringHelper(from);
                 readStringHelper(pl);
                 in.read(reinterpret_cast<char *>(&clk_reps), sizeof(decltype(clk_reps)));
-                in.read(reinterpret_cast<char *>(&unread), sizeof(bool));
+                in.read(reinterpret_cast<char *>(&unread), sizeof(decltype(unread)));
                 Debug.Log("->It is", to, from, std::to_string(clk_reps), std::to_string(unread), pl);
                 msgs[targ].insert({ff, std::make_shared<commEntry>(from, to, pl, std::chrono::nanoseconds(clk_reps), unread)});
             }
