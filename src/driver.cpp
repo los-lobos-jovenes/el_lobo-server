@@ -185,7 +185,7 @@ void serve_command(int clientDesc, std::string command)
 
                         for (const auto i : msgs)
                         {
-                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                formAndWrite(clientDesc, "1", "RETN", "3", i->getTimestampStr(), i->from, i->payload);
                                 commContainer::deleteCommsBySharedPtr(i, username);
                         }
                         formAndWrite(clientDesc, "1", "ENDT", "0");
@@ -260,7 +260,7 @@ void serve_command(int clientDesc, std::string command)
 
                         for (const auto i : msgs)
                         {
-                                formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                formAndWrite(clientDesc, "1", "RETN", "3", i->getTimestampStr(), i->from, i->payload);
                                 commContainer::deleteCommsBySharedPtr(i, username, false);
                         }
                         formAndWrite(clientDesc, "1", "ENDT", "0");
@@ -290,11 +290,10 @@ void serve_command(int clientDesc, std::string command)
                         auto sender = [&clientDesc](auto &msgs) {
                                 for (const auto i : msgs)
                                 {
-                                        formAndWrite(clientDesc, "1", "RETN", "2", i->getTimestampStr(), i->payload);
+                                        formAndWrite(clientDesc, "1", "RETN", "3", i->getTimestampStr(), i->from, i->payload);
                                 }
                         };
                         sender(msgs1);
-                        formAndWrite(clientDesc, "1", "RETN", "1", "SEPARATTOR");
                         sender(msgs2);
                         formAndWrite(clientDesc, "1", "ENDT", "0");
                 }
