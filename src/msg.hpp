@@ -12,6 +12,7 @@
 #define MSG_SEPARATOR '\31'
 #endif
 
+// This class helps in parsing commands
 class msg
 {
 

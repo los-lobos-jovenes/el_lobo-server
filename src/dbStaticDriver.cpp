@@ -3,6 +3,8 @@
 #include "subscriberDb.hpp"
 #include "logger.hpp"
 
+// This is a place, where all static objects definitions go.
+
 std::map<std::string, std::multimap<std::string, std::shared_ptr<commEntry>>> commContainer::msgs;
 std::shared_mutex commContainer::protector;
 

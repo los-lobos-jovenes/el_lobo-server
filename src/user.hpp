@@ -22,6 +22,7 @@ public:
     }
 };
 
+// This class stores registered user data
 class userContainer
 {
 

@@ -38,6 +38,7 @@ static void writeWrapper(int desc, std::string s)
         }
 }
 
+// These are write helpers
 template <typename... T>
 static void formAndWrite(int clientDesc, T... s)
 {
@@ -65,6 +66,7 @@ void notify(std::string target, std::string fromWho)
 }
 
 // At this point we have something that looks like a valid command. Let's parse it!
+// It is a core driver - reacts to user commands
 void serve_command(int clientDesc, std::string command)
 {
         if (command.empty())
@@ -310,6 +312,8 @@ void serve_command(int clientDesc, std::string command)
         }
 }
 
+
+// Function to handle reading from sockets and TCP oddities (glueing and fragmentation)
 void driver_func(int clientDesc)
 {
         std::thread::id this_id = std::this_thread::get_id();
@@ -359,13 +363,13 @@ void driver_func(int clientDesc)
         Debug.Log("Stopped thread to serve client; thread id:", this_id, "; client id:", clientDesc);
 }
 
+// Graceful shutdown procedure
 void shut_down_proc(int signum)
 {
         UNUSED(signum);
 
         Info.Log("Saving databases...");
         userContainer::dumpDb();
-        //subscriberDb::dumpDb();
         commContainer::dumpDb();
 
         Info.Log("Shutting down server...");

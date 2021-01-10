@@ -14,6 +14,7 @@
 
 #include "logger.hpp"
 
+// This is the message class
 struct commEntry
 {
     std::chrono::time_point<std::chrono::system_clock> timestamp;
@@ -46,6 +47,7 @@ struct commEntry
     }
 };
 
+// This class stores messages exchanged between users
 class commContainer
 {
     /*
