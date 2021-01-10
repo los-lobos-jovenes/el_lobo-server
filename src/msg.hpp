@@ -129,7 +129,7 @@ public:
                 int noOfSections = std::atoi(cmd.substr(std::distance(cmd.begin(), adjBeg), std::distance(cmd.begin(), begPl)).c_str());
                 int noOfArrivedSections = std::count(begPl, cmd.end(), separator) - 1;
 
-                Debug.Log("Sections: Expected ", noOfSections, " found ", noOfArrivedSections);
+               // Debug.Log("Sections: Expected ", noOfSections, " found ", noOfArrivedSections);
 
                 if (noOfSections > noOfArrivedSections)
                 {

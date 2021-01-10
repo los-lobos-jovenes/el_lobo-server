@@ -62,6 +62,32 @@ public:
         std::cout << std::endl;
     }
 
+    template <typename Arg>
+    static std::string bind(Arg a)
+    {
+        return std::to_string(a);
+    }
+
+    static std::string bind(const char *a)
+    {
+        return std::string(a);
+    }
+
+    template <typename Arg, typename... Args>
+    static std::string bind(Arg a, Args... out)
+    {
+        std::string ret = std::to_string(a);
+        ret += bind(out...);
+        return ret;
+    }
+    template <typename... Args>
+    static std::string bind(const char *a, Args... out)
+    {
+        std::string ret = a;
+        ret += bind(out...);
+        return ret;
+    }
+
 protected:
     // Logger helpers - not meant to be called by user
     template <typename Arg, typename... Args>
