@@ -96,7 +96,8 @@ public:
 
         for (auto it = cs.begin(); it != cs.end(); it = cs.upper_bound(it->first))
         {
-            rets.push_back(it->first);
+            if (it->second->isUnread)
+                rets.push_back(it->first);
         }
         return rets;
     }
