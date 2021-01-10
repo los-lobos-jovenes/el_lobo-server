@@ -24,6 +24,10 @@ UBSAN =
 OPT += -O3 -DDEBUG_LEVEL=Info
 endif
 
+ifeq ($(DISABLE_1PULL), true)
+OPT += -DOLD_PULL_DISABLED=1
+endif
+
 all: $(SRCZ) $(HDRZ)
 	$(CXX) $(SRCZ) -o $(TRGT) -std=c++17 -Wall -Wextra -Wpedantic $(OPT) $(UBSAN) $(INC) $(LIBZ)
 

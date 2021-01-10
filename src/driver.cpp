@@ -15,6 +15,10 @@
 #define UNUSED(x) (void)x
 #define DO_LIMIT_COMMAND_SIZE 0
 
+#ifndef OLD_PULL_DISABLED
+#define OLD_PULL_DISABLED 0
+#endif
+
 static void writeWrapper(int desc, std::string s)
 {
         int off = 0, n;
@@ -162,7 +166,7 @@ void serve_command(int clientDesc, std::string command)
                         }
                         formAndWrite(clientDesc, "1", "ENDT", "0");
                 }
-                else if (header == "PULL") // Pull pending messages from user
+                else if (header == "PULL" && !OLD_PULL_DISABLED) // Pull pending messages from user
                 {
                         auto username = message[3];
                         auto password = message[4];

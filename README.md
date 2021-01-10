@@ -73,7 +73,7 @@ Uwagi.
 Zwracana wiadomość jest postaci `|1|ALRT|2|SUBSCRIPTION_ALERT|whoHasSentTheMessage-username|`.
 * **PULL** w wersji `2` nie usuwa wiadomości, jedynie oznacza je jako przeczytane.
 * 2**APLL** pobiera zarówno otrzymane jak i wysłane wiadomości. Klient musi sam uporządkować je we właściwej kolejności.
-* Mieszanie 2**PULL**, 2**APLL** i 1**PULL** to zły pomysł. W interesie użytkownika jest stosowanie klienta, który korzysta z jednego rodzaju protokołów.
+* Mieszanie 2**PULL**, 2**APLL** i 1**PULL** to zły pomysł. W interesie użytkownika jest stosowanie klienta, który korzysta z jednego rodzaju protokołów. Można skompilować serwer z opcją `DISABLE_1PULL=true`, by wyłączyć "groźny" stary `PULL` który kasuje wiadomości.
 
 ### Zwracane przez serwer
 | Nazwa | Wersja |                            Przeznaczenie                                |
