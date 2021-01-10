@@ -279,6 +279,7 @@ void serve_command(int clientDesc, std::string command)
                 {
                         auto username = message[3];
                         auto password = message[4];
+                        auto optMark  = message[5];
 
                         if (!userContainer::authenticateUser(username, password))
                         {
@@ -296,13 +297,16 @@ void serve_command(int clientDesc, std::string command)
 
                         auto msgs1 = commContainer::pullCommsForUserFromUser(username, target);
                         auto msgs2 = commContainer::pullCommsForUserFromUser(target, username); // inverse of what is above - so messages I've sent to someone
-                        auto sender = [&clientDesc](auto &msgs) {
+                        auto sender = [&clientDesc, &username, &optMark](auto &msgs) {
                                 for (const auto i : msgs)
                                 {
                                         formAndWrite(clientDesc, "1", "RETN", "3", i->getTimestampStr(), i->from, i->payload);
+                                        if(optMark == "read")
+                                                commContainer::deleteCommsBySharedPtr(i, username, false);
                                 }
                         };
                         sender(msgs1);
+                        optMark = ""; // We do not want to mark messages meant to others as read by accident
                         sender(msgs2);
                         formAndWrite(clientDesc, "1", "ENDT", "0");
                 }
@@ -314,7 +318,6 @@ void serve_command(int clientDesc, std::string command)
                 break;
         }
 }
-
 
 // Function to handle reading from sockets and TCP oddities (glueing and fragmentation)
 void driver_func(int clientDesc)
