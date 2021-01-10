@@ -28,6 +28,7 @@ Logger Fatal("FATAL ERROR", Logger::LogLevel::Fatal);
 #define DEBUG_LEVEL Debug
 #endif
 
+// Custom terminator - tries to save databases on most critical of errors
 [[noreturn]] void terminator()
 {
         commContainer::dumpDb("comms.fail.db");
@@ -36,11 +37,18 @@ Logger Fatal("FATAL ERROR", Logger::LogLevel::Fatal);
         std::abort();
 }
 
+
+inline void terminator(int)
+{
+        terminator();
+}
+
 int main(int argc, char *argv[])
 {
         Logger::GlobalLogLevel = Logger::LogLevel::DEBUG_LEVEL;
 
         signal(SIGINT, shut_down_proc);
+        signal(SIGTERM, terminator);
         signal(SIGPIPE, SIG_IGN);
 
         std::set_terminate(&terminator);
@@ -85,10 +93,6 @@ int main(int argc, char *argv[])
         {
                 Info.Log("Restored message database.");
         }
-        /*if(subscriberDb::loadDb())
-        {
-                Info.Log("Restored subscribers database.");
-        }*/
         if (userContainer::loadDb())
         {
                 Info.Log("Restored user database.");
@@ -111,7 +115,7 @@ int main(int argc, char *argv[])
                                 std::thread thr(driver_func, clientDesc);
                                 thr.detach();
                         }
-                        catch (std::system_error &e)
+                        catch (std::system_error &e) // If system is out of resources and can't allocate new thread, will not crash
                         {
                                 Fatal.Log("Could not create new thread:", e.what());
                                 close(clientDesc);
